@@ -1,20 +1,40 @@
 from flask import Flask, render_template, request, jsonify, session
 import requests
-from flask_session import Session  # Server-side session အတွက်
+from flask_session import Session
+import os
+import azure.cognitiveservices.speech as speechsdk
 
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Hugging Face API အတွက်
-API_KEY = "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"
-API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"  # ဥပမာ model
+# GitHub raw URL ကနေ responses ယူမယ်
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/pphaibot/main/responses.json"
 
-def query_huggingface(payload):
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    response = requests.post(API_URL, headers=headers, json=payload)
-    return response.json()
+# Azure TTS အတွက် (သင့် Azure credentials ထည့်ပါ)
+AZURE_SPEECH_KEY = "YOUR_AZURE_SPEECH_KEY"
+AZURE_REGION = "YOUR_AZURE_REGION"
+AUDIO_OUTPUT_PATH = "static/response.wav"
+
+def get_github_responses():
+    try:
+        response = requests.get(GITHUB_RAW_URL)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching GitHub responses: {e}")
+        return {"တောင်းပန်ပါတယ်": "တစ်ခုခု မှားနေပါတယ်။"}
+
+def text_to_speech_azure(text):
+    speech_config = speechsdk.SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_REGION)
+    speech_config.speech_synthesis_voice_name = "my-MM-ThiriNeural"  # Myanmar voice
+    audio_config = speechsdk.audio.AudioOutputConfig(filename=AUDIO_OUTPUT_PATH)
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    result = synthesizer.speak_text_async(text).get()
+    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+        return AUDIO_OUTPUT_PATH
+    return None
 
 @app.route('/')
 def index():
@@ -28,44 +48,23 @@ def index():
 def send_message():
     user_message = request.form['chatInput'].strip()
     
-    # User message ကို session ထဲ ထည့်မယ်
+    # User message ထည့်မယ်
     session['messages'].append({"type": "user", "text": user_message})
     
-    # Hugging Face API ကနေ AI response ယူမယ်
-    payload = {"inputs": user_message}
-    response = query_huggingface(payload)
+    # GitHub ကနေ response ယူမယ်
+    responses = get_github_responses()
+    bot_response = responses.get(user_message, "မသိပါဘူး။ တစ်ခြား ဘာမေးချင်လဲ?")
     
-    # API response ကနေ text ထုတ်ယူမယ် (model ပေါ်မူတည်ပြီး structure ကွဲပြားနိုင်တယ်)
-    bot_response = response[0]['generated_text'] if response and isinstance(response, list) else "တောင်းပန်ပါတယ်၊ ပြဿနာတစ်ခုရှိနေပါတယ်။"
-    
-    # Bot response ကို session ထဲ ထည့်မယ်
-    session['messages'].append({"type": "bot", "text": bot_response})
-    session.modified = True  # Session ပြောင်းလဲမှု သိမ်းဖို့
-    
-    return jsonify({"messages": session['messages']})
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-from gtts import gTTS
-import os
-
-@app.route('/send', methods=['POST'])
-def send_message():
-    user_message = request.form['chatInput'].strip()
-    session['messages'].append({"type": "user", "text": user_message})
-    
-    # AI response
-    payload = {"inputs": user_message}
-    response = query_huggingface(payload)
-    bot_response = response[0]['generated_text'] if response and isinstance(response, list) else "တောင်းပန်ပါတယ်၊ ပြဿနာတစ်ခုရှိနေပါတယ်။"
+    # Bot response ထည့်မယ်
     session['messages'].append({"type": "bot", "text": bot_response})
     
-    # Text-to-Speech
-    tts = gTTS(text=bot_response, lang='my')  # 'my' for Myanmar (support မရှိရင် 'en' သုံးပါ)
-    audio_file = "static/response.mp3"
-    tts.save(audio_file)
+    # Azure TTS နဲ့ Myanmar အသံထုတ်မယ်
+    audio_file = text_to_speech_azure(bot_response)
     
     session.modified = True
-    return jsonify({"messages": session['messages'], "audio": audio_file})
+    return jsonify({"messages": session['messages'], "audio": audio_file if audio_file else ""})
 
+if __name__ == '__main__':
+    if not os.path.exists('static'):
+        os.makedirs('static')
+    app.run(host='0.0.0.0', port=5000, debug=True)
