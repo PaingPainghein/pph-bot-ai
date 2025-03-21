@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPH AI စကားပြောစက်</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pyidaungsu', Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 500px;
+            height: 750px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            text-align: center;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            font-size: 22px;
+        }
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .chat-message {
+            margin: 10px 0;
+            padding: 12px 18px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 16px;
+        }
+        .user-message {
+            background-color: #3498db;
+            color: white;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #dcdcdc;
+            color: #333;
+        }
+        .chat-footer {
+            padding: 15px;
+            display: flex;
+            border-top: 1px solid #e0e0e0;
+            background-color: #fff;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+            font-size: 16px;
+        }
+        .send-button {
+            padding: 12px 25px;
+            margin-left: 10px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .send-button:hover {
+            background-color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>PPH AI စကားပြောစက်</h2>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message bot-message">မင်္ဂလာပါ။ PPH AI စကားပြောစက်မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" class="chat-input" id="chatInput" placeholder="မေးချင်တာရိုက်ထည့်ပါ...">
+            <button class="send-button" onclick="sendMessage()">ပို့မယ်</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const chatBody = document.getElementById('chatBody');
+            const message = input.value.trim();
+
+            if (message) {
+                // Display user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-message user-message';
+                userMessage.textContent = message;
+                chatBody.appendChild(userMessage);
+
+                // Send request to server for AI response and audio
+                const formData = new FormData();
+                formData.append('text', message);
+                const audioResponse = await fetch('/speak', {
+                    method: 'POST',
+                    body: formData
+                });
+                const audioBlob = await audioResponse.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                // Simulate bot response display
+                setTimeout(async () => {
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'chat-message bot-message';
+                    // Fetch the text response from the server (optional, for display)
+                    const textResponse = await fetch('/speak', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    botMessage.textContent = message; // Simplified; ideally, fetch the AI response text
+                    chatBody.appendChild(botMessage);
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                    audio.play();
+                }, 1000);
+
+                // Clear input
+                input.value = '';
+            }
+        }
+
+        // Send message on Enter key
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
