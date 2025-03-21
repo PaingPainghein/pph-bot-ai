@@ -3,79 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPH AI စကားပြောစက်</title>
+    <title>PPH AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap" rel="stylesheet">
     <style>
-        /* 3D UI CSS ကို ဒီမှာ ထည့်ထားတယ် (အပေါ်က အတိုင်း) */
-        body { font-family: 'Pyidaungsu', Arial, sans-serif; background: linear-gradient(135deg, #e0eafc, #cfdef3); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; perspective: 1000px; }
-        .chat-container { width: 500px; height: 750px; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; transform: rotateY(10deg) rotateX(5deg); transition: transform 0.3s ease; }
-        .chat-container:hover { transform: rotateY(0deg) rotateX(0deg); }
-        .chat-header { background: linear-gradient(45deg, #2c3e50, #4a627a); color: #ecf0f1; padding: 15px; text-align: center; border-top-left-radius: 20px; border-top-right-radius: 20px; font-size: 22px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); transform: translateZ(20px); }
-        .chat-body { flex: 1; padding: 20px; overflow-y: auto; background: #f9f9f9; border-radius: 0 0 20px 20px; transform: translateZ(10px); }
-        .chat-message { margin: 10px 0; padding: 12px 18px; border-radius: 10px; max-width: 80%; word-wrap: break-word; font-size: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: transform 0.2s ease; }
-        .chat-message:hover { transform: translateZ(15px) scale(1.02); }
-        .user-message { background: linear-gradient(45deg, #3498db, #5dade2); color: white; margin-left: auto; }
-        .bot-message { background: linear-gradient(45deg, #dcdcdc, #e8ecef); color: #333; }
-        .chat-footer { padding: 15px; display: flex; border-top: 1px solid #e0e0e0; background: #fff; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; transform: translateZ(20px); }
-        .chat-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; outline: none; font-size: 16px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1); }
-        .send-button { padding: 12px 25px; margin-left: 10px; background: linear-gradient(45deg, #2c3e50, #4a627a); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
-        .send-button:hover { transform: translateZ(10px) scale(1.05); background: linear-gradient(45deg, #34495e, #5d738a); }
+        body {
+            font-family: 'Pyidaungsu', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        .chat-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-message {
+            margin: 10px 0;
+            padding: 12px 18px;
+            border-radius: 15px;
+            max-width: 70%;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .user-message {
+            background: #3498db;
+            align-self: flex-end;
+            color: white;
+        }
+        .bot-message {
+            background: rgba(255, 255, 255, 0.2);
+            align-self: flex-start;
+            color: #fff;
+        }
+        .chat-footer {
+            padding: 15px;
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .send-button {
+            padding: 12px 20px;
+            margin-left: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .send-button:hover {
+            background: #c0392b;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h2>PPH AI စကားပြောစက်</h2>
+            PPH AI
         </div>
         <div class="chat-body" id="chatBody">
-            {% for msg in messages %}
-                <div class="chat-message {{ 'user-message' if msg.type == 'user' else 'bot-message' }}">{{ msg.text }}</div>
-            {% endfor %}
+            <div class="chat-message bot-message">မင်္ဂလာပါ။ PPH AI မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?</div>
         </div>
         <div class="chat-footer">
-            <form id="chatForm">
-                <input type="text" class="chat-input" id="chatInput" name="chatInput" placeholder="မေးချင်တာရိုက်ထည့်ပါ..." required>
-                <button type="submit" class="send-button">ပို့မယ်</button>
-            </form>
+            <input type="text" class="chat-input" id="chatInput" placeholder="မေးချင်တာရိုက်ထည့်ပါ...">
+            <button class="send-button" onclick="sendMessage()">ပို့မယ်</button>
         </div>
     </div>
 
-    <audio id="audioPlayer" style="display:none;"></audio>
-
     <script>
-        document.getElementById('chatForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        async function sendMessage() {
             const input = document.getElementById('chatInput');
             const chatBody = document.getElementById('chatBody');
-            const audioPlayer = document.getElementById('audioPlayer');
             const message = input.value.trim();
 
             if (message) {
-                const formData = new FormData();
-                formData.append('chatInput', message);
+                // Display user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-message user-message';
+                userMessage.textContent = message;
+                chatBody.appendChild(userMessage);
 
-                const response = await fetch('/send', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+                try {
+                    // Get text response from /response endpoint
+                    const responseFormData = new FormData();
+                    responseFormData.append('text', message);
+                    const responseReq = await fetch('/response', {
+                        method: 'POST',
+                        body: responseFormData
+                    });
+                    const responseData = await responseReq.json();
+                    if (!responseReq.ok) throw new Error(responseData.error || 'Response error');
 
-                chatBody.innerHTML = '';
-                data.messages.forEach(msg => {
-                    const div = document.createElement('div');
-                    div.className = `chat-message ${msg.type === 'user' ? 'user-message' : 'bot-message'}`;
-                    div.textContent = msg.text;
-                    chatBody.appendChild(div);
-                });
+                    // Display bot response
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'chat-message bot-message';
+                    botMessage.textContent = responseData.response;
+                    chatBody.appendChild(botMessage);
 
-                // Audio ဖွင့်မယ်
-                if (data.audio) {
-                    audioPlayer.src = `${window.location.origin}/${data.audio}?t=${new Date().getTime()}`; // Cache မသုံးအောင်
-                    audioPlayer.play();
+                    // Get audio from /speak endpoint
+                    const audioFormData = new FormData();
+                    audioFormData.append('text', message);
+                    const audioResponse = await fetch('/speak', {
+                        method: 'POST',
+                        body: audioFormData
+                    });
+                    if (!audioResponse.ok) throw new Error('Audio fetch error');
+
+                    const audioBlob = await audioResponse.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                } catch (error) {
+                    console.error('Error:', error);
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'chat-message bot-message';
+                    botMessage.textContent = "တစ်ခုခု မှားနေပါတယ်။ ထပ်ကြိုးစားကြည့်ပါ။";
+                    chatBody.appendChild(botMessage);
                 }
 
-                chatBody.scrollTop = chatBody.scrollHeight;
+                // Clear input and scroll
                 input.value = '';
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        }
+
+        // Send message on Enter key
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         });
     </script>
