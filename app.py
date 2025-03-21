@@ -5,7 +5,6 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# ရိုးရှင်းတဲ့ ဘာသာပြန်ခြင်း (dummy translation)
 def translate_to_english(text):
     translations = {
         "မင်္ဂလာပါ": "Hello",
@@ -15,9 +14,9 @@ def translate_to_english(text):
         "ဘယ်ကလာလဲ": "Where are you from?",
         "အခုဘယ်နာရီလဲ": "What time is it now?",
         "ဒီနေ့ ရာသီဥတု ဘယ်လိုလဲ": "How's the weather today?"
-    }    return translations.get(text, "I can't translate that yet.")
+    }
+    return translations.get(text, "I can't translate that yet.")
 
-# ရိုးရှင်းတဲ့ ရာသီဥတု (dummy weather)
 def get_weather(city):
     weather_data = {
         "ရန်ကုန်": "ဒီနေ့ ရန်ကုန်မှာ မိုးအနည်းငယ် ရွာနိုင်ပါတယ်။ အပူချိန် ၃၀ ဒီဂရီရှိပါတယ်။",
@@ -26,30 +25,21 @@ def get_weather(city):
     }
     return weather_data.get(city, "ဒီမြို့ရဲ့ ရာသီဥတုကို မသိသေးပါဘူး။ မြို့အမည်ကို ပြောပြပါ။")
 
-# Custom response function
 def get_custom_response(message):
     message = message.strip().lower()
-    
-    # အချိန်မေးရင်
     if "အခုဘယ်နာရီလဲ" in message or "အချိန်" in message:
         current_time = datetime.now().strftime("%H:%M:%S")
         return f"အခုအချိန်က {current_time} ပါ။"
-    
-    # ရာသီဥတု မေးရင်
     if "ရာသီဥတု" in message:
         city = message.replace("ဒီနေ့", "").replace("ရာသီဥတု", "").replace("ဘယ်လိုလဲ", "").strip()
         if city:
             return get_weather(city)
         return "ဘယ်မြို့ရဲ့ ရာသီဥတုကို သိချင်လဲ ပြောပြပါ။"
-    
-    # ဘာသာပြန်ရင်
     if "အင်္ဂလိပ်လို ပြန်ပေး" in message or "ဘာသာပြန်" in message:
         text_to_translate = message.replace("အင်္ဂလိပ်လို ပြန်ပေး", "").replace("ဘာသာပြန်", "").strip()
         if text_to_translate:
             return translate_to_english(text_to_translate)
         return "ဘာကို ဘာသာပြန်ပေးရမလဲ ပြောပြပါ။"
-
-    # ပုံမှန် တုံ့ပြန်မှု
     responses = {
         "မင်္ဂလာပါ": "မင်္ဂလာပါ။ PPH AI မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?",
         "ဟိုင်း": "ဟိုင်း။ PPH AI က ဘာလဲလို့ မေးကြည့်လိုက်မယ်?",
@@ -74,7 +64,6 @@ def speak():
     text = request.form.get('text')
     if not text:
         return jsonify({"error": "No text provided"}), 400
-    
     response = get_custom_response(text)
     try:
         tts = gTTS(text=response, lang='my', slow=False)
