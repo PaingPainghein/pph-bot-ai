@@ -1,70 +1,87 @@
-from flask import Flask, render_template, request, jsonify, session
-import requests
-from flask_session import Session
+from flask import Flask, request, send_file, jsonify
+from gtts import gTTS
 import os
-import azure.cognitiveservices.speech as speechsdk
+from datetime import datetime
 
 app = Flask(__name__)
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
 
-# GitHub raw URL ကနေ responses ယူမယ်
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/PaingPainghein/pph-bot-ai/refs/heads/main/app.json"
+def translate_to_english(text):
+    translations = {
+        "မင်္ဂလာပါ": "Hello",
+        "နေကောင်းလား": "Are you well?",
+        "ကျေးဇူးပါ": "Thank you",
+        "ဘာလုပ်လို့ရလဲ": "What can you do?",
+        "ဘယ်ကလာလဲ": "Where are you from?",
+        "အခုဘယ်နာရီလဲ": "What time is it now?",
+        "ဒီနေ့ ရာသီဥတု ဘယ်လိုလဲ": "How's the weather today?"
+    }
+    return translations.get(text, "I can't translate that yet.")
 
-# Azure TTS အတွက် (သင့် Azure credentials ထည့်ပါ)
-AZURE_SPEECH_KEY = "YOUR_AZURE_SPEECH_KEY"
-AZURE_REGION = "YOUR_AZURE_REGION"
-AUDIO_OUTPUT_PATH = "static/response.wav"
+def get_weather(city):
+    weather_data = {
+        "ရန်ကုန်": "ဒီနေ့ ရန်ကုန်မှာ မိုးအနည်းငယ် ရွာနိုင်ပါတယ်။ အပူချိန် ၃၀ ဒီဂရီရှိပါတယ်။",
+        "မန္တလေး": "ဒီနေ့ မန္တလေးမှာ နေပူပြီး အပူချိန် ၃၅ ဒီဂရီရှိပါတယ်။",
+        "နေပြည်တော်": "ဒီနေ့ နေပြည်တော်မှာ တိမ်အနည်းငယ်ရှိပြီး အပူချိန် ၃၂ ဒီဂရီရှိပါတယ်။"
+    }
+    return weather_data.get(city, "ဒီမြို့ရဲ့ ရာသီဥတုကို မသိသေးပါဘူး။ မြို့အမည်ကို ပြောပြပါ။")
 
-def get_github_responses():
-    try:
-        response = requests.get(GITHUB_RAW_URL)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"Error fetching GitHub responses: {e}")
-        return {"တောင်းပန်ပါတယ်": "တစ်ခုခု မှားနေပါတယ်။"}
-
-def text_to_speech_azure(text):
-    speech_config = speechsdk.SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_REGION)
-    speech_config.speech_synthesis_voice_name = "my-MM-ThiriNeural"  # Myanmar voice
-    audio_config = speechsdk.audio.AudioOutputConfig(filename=AUDIO_OUTPUT_PATH)
-    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-    result = synthesizer.speak_text_async(text).get()
-    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-        return AUDIO_OUTPUT_PATH
-    return None
+def get_custom_response(message):
+    message = message.strip().lower()
+    if "အခုဘယ်နာရီလဲ" in message or "အချိန်" in message:
+        current_time = datetime.now().strftime("%H:%M:%S")
+        return f"အခုအချိန်က {current_time} ပါ။"
+    if "ရာသီဥတု" in message:
+        city = message.replace("ဒီနေ့", "").replace("ရာသီဥတု", "").replace("ဘယ်လိုလဲ", "").strip()
+        if city:
+            return get_weather(city)
+        return "ဘယ်မြို့ရဲ့ ရာသီဥတုကို သိချင်လဲ ပြောပြပါ။"
+    if "အင်္ဂလိပ်လို ပြန်ပေး" in message or "ဘာသာပြန်" in message:
+        text_to_translate = message.replace("အင်္ဂလိပ်လို ပြန်ပေး", "").replace("ဘာသာပြန်", "").strip()
+        if text_to_translate:
+            return translate_to_english(text_to_translate)
+        return "ဘာကို ဘာသာပြန်ပေးရမလဲ ပြောပြပါ။"
+    responses = {
+        "မင်္ဂလာပါ": "မင်္ဂလာပါ။ PPH AI မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?",
+        "ဟိုင်း": "ဟိုင်း။ PPH AI က ဘာလဲလို့ မေးကြည့်လိုက်မယ်?",
+        "နေကောင်းလား": "ကျွန်တော် နေကောင်းပါတယ်။ သင်ရော နေကောင်းလား?",
+        "ကျေးဇူးပါ": "ရပါတယ်။ PPH AI က နောက်ထပ် ဘာကူညီပေးရမလဲ?",
+        "ဘာမှမသိဘူး": "စိတ်မပူပါနဲ့။ သင်သိချင်တာ ဘာလဲဆိုတာ ပြောပြရင် PPH AI က ရှင်းပြပေးမယ်။",
+        "သွားတော့မယ်": "အိုကေ။ နောက်တစ်ခါ PPH AI နဲ့ ပြန်တွေ့မယ်နော်။ ဂရုစိုက်ပါ။",
+        "ဂွတ်ဘိုင်": "ဂွတ်ဘိုင်။ PPH AI နဲ့ နောက်မှ ထပ်ဆုံကြမယ်။",
+        "ဘယ်သူလဲ": "ကျွန်တော်က PPH AI စကားပြောစက်ပါ။ သင့်ကို ကူညီဖို့ ဖန်တီးထားတာပါ။",
+        "ဘာလုပ်လို့ရလဲ": "PPH AI က မေးခွန်းတွေ ဖြေပေးနိုင်တယ်၊ စကားပြောနိုင်တယ်၊ အချက်အလက် ရှာပေးနိုင်တယ်၊ ဘာသာပြန်ပေးနိုင်တယ်၊ ရာသီဥတု ပြောပြပေးနိုင်တယ်။ ဘာလုပ်ချင်လဲ?",
+        "ဘယ်ကလာလဲ": "ကျွန်တော်က ဒစ်ဂျစ်တယ် ကမ္ဘာက လာတာပါ။ PPH AI လို နေရာမျိုးက ဖန်တီးထားတာပါ။",
+        "ဘယ်လောက်သိလဲ": "PPH AI က အများကြီး သိအောင် လေ့ကျင့်ထားပါတယ်။ သင်မေးတာကို ဖြေကြည့်လို့ရပါတယ်။"
+    }
+    return responses.get(message, "သင်ပြောတာကို နားမလည်ဘူး။ PPH AI ကို နောက်တစ်ခါ ပြန်ပြောပြပါ။ ဘာကူညီပေးရမလဲ?")
 
 @app.route('/')
 def index():
-    if 'messages' not in session:
-        session['messages'] = [
-            {"type": "bot", "text": "မင်္ဂလာပါ။ PPH AI စကားပြောစက်မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?"}
-        ]
-    return render_template('index.html', messages=session['messages'])
+    return send_file('index.html')
 
-@app.route('/send', methods=['POST'])
-def send_message():
-    user_message = request.form['chatInput'].strip()
-    
-    # User message ထည့်မယ်
-    session['messages'].append({"type": "user", "text": user_message})
-    
-    # GitHub ကနေ response ယူမယ်
-    responses = get_github_responses()
-    bot_response = responses.get(user_message, "မသိပါဘူး။ တစ်ခြား ဘာမေးချင်လဲ?")
-    
-    # Bot response ထည့်မယ်
-    session['messages'].append({"type": "bot", "text": bot_response})
-    
-    # Azure TTS နဲ့ Myanmar အသံထုတ်မယ်
-    audio_file = text_to_speech_azure(bot_response)
-    
-    session.modified = True
-    return jsonify({"messages": session['messages'], "audio": audio_file if audio_file else ""})
+@app.route('/speak', methods=['POST'])
+def speak():
+    text = request.form.get('text')
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    response = get_custom_response(text)
+    try:
+        tts = gTTS(text=response, lang='my', slow=False)
+        audio_file = "static/response.mp3"
+        tts.save(audio_file)
+        return send_file(audio_file, mimetype="audio/mp3")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/response', methods=['POST'])
+def response():
+    text = request.form.get('text')
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    response_text = get_custom_response(text)
+    return jsonify({"response": response_text})
 
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
