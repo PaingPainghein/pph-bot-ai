@@ -15,8 +15,7 @@ def translate_to_english(text):
         "ဘယ်ကလာလဲ": "Where are you from?",
         "အခုဘယ်နာရီလဲ": "What time is it now?",
         "ဒီနေ့ ရာသီဥတု ဘယ်လိုလဲ": "How's the weather today?"
-    }
-    return translations.get(text, "I can't translate that yet.")
+    }    return translations.get(text, "I can't translate that yet.")
 
 # ရိုးရှင်းတဲ့ ရာသီဥတု (dummy weather)
 def get_weather(city):
