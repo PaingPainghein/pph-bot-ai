@@ -5,6 +5,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+# ရိုးရှင်းတဲ့ ဘာသာပြန်ခြင်း (dummy translation)
 def translate_to_english(text):
     translations = {
         "မင်္ဂလာပါ": "Hello",
@@ -17,6 +18,7 @@ def translate_to_english(text):
     }
     return translations.get(text, "I can't translate that yet.")
 
+# ရိုးရှင်းတဲ့ ရာသီဥတု (dummy weather)
 def get_weather(city):
     weather_data = {
         "ရန်ကုန်": "ဒီနေ့ ရန်ကုန်မှာ မိုးအနည်းငယ် ရွာနိုင်ပါတယ်။ အပူချိန် ၃၀ ဒီဂရီရှိပါတယ်။",
@@ -25,21 +27,30 @@ def get_weather(city):
     }
     return weather_data.get(city, "ဒီမြို့ရဲ့ ရာသီဥတုကို မသိသေးပါဘူး။ မြို့အမည်ကို ပြောပြပါ။")
 
+# Custom response function
 def get_custom_response(message):
     message = message.strip().lower()
+    
+    # အချိန်မေးရင်
     if "အခုဘယ်နာရီလဲ" in message or "အချိန်" in message:
         current_time = datetime.now().strftime("%H:%M:%S")
         return f"အခုအချိန်က {current_time} ပါ။"
+    
+    # ရာသီဥတု မေးရင်
     if "ရာသီဥတု" in message:
         city = message.replace("ဒီနေ့", "").replace("ရာသီဥတု", "").replace("ဘယ်လိုလဲ", "").strip()
         if city:
             return get_weather(city)
         return "ဘယ်မြို့ရဲ့ ရာသီဥတုကို သိချင်လဲ ပြောပြပါ။"
+    
+    # ဘာသာပြန်ရင်
     if "အင်္ဂလိပ်လို ပြန်ပေး" in message or "ဘာသာပြန်" in message:
         text_to_translate = message.replace("အင်္ဂလိပ်လို ပြန်ပေး", "").replace("ဘာသာပြန်", "").strip()
         if text_to_translate:
             return translate_to_english(text_to_translate)
         return "ဘာကို ဘာသာပြန်ပေးရမလဲ ပြောပြပါ။"
+
+    # ပုံမှန် တုံ့ပြန်မှု
     responses = {
         "မင်္ဂလာပါ": "မင်္ဂလာပါ။ PPH AI မှ ကြိုဆိုပါတယ်။ ဘာကူညီပေးရမလဲ?",
         "ဟိုင်း": "ဟိုင်း။ PPH AI က ဘာလဲလို့ မေးကြည့်လိုက်မယ်?",
@@ -64,6 +75,7 @@ def speak():
     text = request.form.get('text')
     if not text:
         return jsonify({"error": "No text provided"}), 400
+    
     response = get_custom_response(text)
     try:
         tts = gTTS(text=response, lang='my', slow=False)
@@ -82,27 +94,6 @@ def response():
     return jsonify({"response": response_text})
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-from gtts import gTTS
-import os
-
-@app.route('/send', methods=['POST'])
-def send_message():
-    user_message = request.form['chatInput'].strip()
-    session['messages'].append({"type": "user", "text": user_message})
-    
-    # AI response
-    payload = {"inputs": user_message}
-    response = query_huggingface(payload)
-    bot_response = response[0]['generated_text'] if response and isinstance(response, list) else "တောင်းပန်ပါတယ်၊ ပြဿနာတစ်ခုရှိနေပါတယ်။"
-    session['messages'].append({"type": "bot", "text": bot_response})
-    
-    # Text-to-Speech
-    tts = gTTS(text=bot_response, lang='my')  # 'my' for Myanmar (support မရှိရင် 'en' သုံးပါ)
-    audio_file = "static/response.mp3"
-    tts.save(audio_file)
-    
-    session.modified = True
-    return jsonify({"messages": session['messages'], "audio": audio_file})
-
+    if not os.path.exists('static'):
+        os.makedirs('static')
+    app.run(debug=True, host='0.0.0.0', port=5000)
