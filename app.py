@@ -10,7 +10,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # GitHub raw URL ကနေ responses ယူမယ်
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/pphaibot/main/responses.json"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/PaingPainghein/pph-bot-ai/refs/heads/main/app.json"
 
 # Azure TTS အတွက် (သင့် Azure credentials ထည့်ပါ)
 AZURE_SPEECH_KEY = "YOUR_AZURE_SPEECH_KEY"

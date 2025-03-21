@@ -6,7 +6,6 @@
     <title>PPH AI စကားပြောစက်</title>
     <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap" rel="stylesheet">
     <style>
-        /* 3D UI CSS ကို ဒီမှာ ထည့်ထားတယ် (အပေါ်က အတိုင်း) */
         body { font-family: 'Pyidaungsu', Arial, sans-serif; background: linear-gradient(135deg, #e0eafc, #cfdef3); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; perspective: 1000px; }
         .chat-container { width: 500px; height: 750px; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; transform: rotateY(10deg) rotateX(5deg); transition: transform 0.3s ease; }
         .chat-container:hover { transform: rotateY(0deg) rotateX(0deg); }
@@ -68,9 +67,8 @@
                     chatBody.appendChild(div);
                 });
 
-                // Audio ဖွင့်မယ်
                 if (data.audio) {
-                    audioPlayer.src = `${window.location.origin}/${data.audio}?t=${new Date().getTime()}`; // Cache မသုံးအောင်
+                    audioPlayer.src = `${window.location.origin}/${data.audio}?t=${new Date().getTime()}`;
                     audioPlayer.play();
                 }
 
