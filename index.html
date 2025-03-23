@@ -122,10 +122,10 @@
                 chatBody.appendChild(userMessage);
 
                 try {
-                    // Get text response from /response endpoint
+                    // Get text response from Render /response endpoint
                     const responseFormData = new FormData();
                     responseFormData.append('text', message);
-                    const responseReq = await fetch('/response', {
+                    const responseReq = await fetch('https://pph-backend.onrender.com/response', {
                         method: 'POST',
                         body: responseFormData
                     });
@@ -138,10 +138,10 @@
                     botMessage.textContent = responseData.response;
                     chatBody.appendChild(botMessage);
 
-                    // Get audio from /speak endpoint
+                    // Get audio from Render /speak endpoint
                     const audioFormData = new FormData();
                     audioFormData.append('text', message);
-                    const audioResponse = await fetch('/speak', {
+                    const audioResponse = await fetch('https://pph-backend.onrender.com/speak', {
                         method: 'POST',
                         body: audioFormData
                     });
