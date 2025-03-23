@@ -158,4 +158,4 @@ def response():
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
-    app.run(debug=True, host='pphaibot.duckdns.org', port=5000)  # Port 80 ဖွင့်ချင်ရင် 80 ပြောင်းပါ
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Port 80 ဖွင့်ချင်ရင် 80 ပြောင်းပါ
